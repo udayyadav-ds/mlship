@@ -1,618 +1,99 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MLShip — Deploy ML Apps in 60 Seconds</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #060810;
-    --surface: #0d1117;
-    --border: #1e2433;
-    --accent: #00f5a0;
-    --accent2: #00b8ff;
-    --text: #e8eaf0;
-    --muted: #5a6480;
-    --danger: #ff4d6d;
-  }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Syne', sans-serif;
-    overflow-x: hidden;
-    cursor: none;
-  }
-
-  /* Custom cursor */
-  .cursor {
-    width: 10px; height: 10px;
-    background: var(--accent);
-    border-radius: 50%;
-    position: fixed;
-    pointer-events: none;
-    z-index: 9999;
-    transition: transform 0.1s ease;
-    mix-blend-mode: screen;
-  }
-  .cursor-ring {
-    width: 36px; height: 36px;
-    border: 1px solid var(--accent);
-    border-radius: 50%;
-    position: fixed;
-    pointer-events: none;
-    z-index: 9998;
-    transition: all 0.15s ease;
-    opacity: 0.5;
-  }
-
-  /* Grid background */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image:
-      linear-gradient(var(--border) 1px, transparent 1px),
-      linear-gradient(90deg, var(--border) 1px, transparent 1px);
-    background-size: 60px 60px;
-    opacity: 0.3;
-    z-index: 0;
-    pointer-events: none;
-  }
-
-  /* Glow blobs */
-  .blob {
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(120px);
-    opacity: 0.07;
-    pointer-events: none;
-    z-index: 0;
-  }
-  .blob-1 { width: 600px; height: 600px; background: var(--accent); top: -200px; left: -100px; }
-  .blob-2 { width: 500px; height: 500px; background: var(--accent2); bottom: -100px; right: -100px; }
-
-  /* NAV */
-  nav {
-    position: fixed; top: 0; left: 0; right: 0;
-    z-index: 100;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 20px 60px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(6, 8, 16, 0.85);
-    backdrop-filter: blur(16px);
-    animation: fadeDown 0.6s ease forwards;
-  }
-
-  .logo {
-    font-family: 'Space Mono', monospace;
-    font-size: 18px;
-    color: var(--accent);
-    letter-spacing: -0.5px;
-  }
-  .logo span { color: var(--text); }
-
-  .nav-tag {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    padding: 6px 14px;
-    border-radius: 4px;
-  }
-
-  /* HERO */
-  .hero {
-    position: relative;
-    z-index: 1;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 120px 40px 80px;
-    text-align: center;
-  }
-
-  .badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(0, 245, 160, 0.06);
-    border: 1px solid rgba(0, 245, 160, 0.2);
-    border-radius: 100px;
-    padding: 8px 18px;
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    color: var(--accent);
-    margin-bottom: 40px;
-    animation: fadeUp 0.6s 0.2s ease both;
-  }
-  .badge-dot {
-    width: 6px; height: 6px;
-    background: var(--accent);
-    border-radius: 50%;
-    animation: pulse 2s infinite;
-  }
-
-  h1 {
-    font-size: clamp(48px, 8vw, 96px);
-    font-weight: 800;
-    line-height: 1.0;
-    letter-spacing: -3px;
-    max-width: 900px;
-    animation: fadeUp 0.6s 0.3s ease both;
-  }
-  h1 em {
-    font-style: normal;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-
-  .hero-sub {
-    font-size: 18px;
-    color: var(--muted);
-    max-width: 520px;
-    margin: 24px auto 0;
-    line-height: 1.7;
-    font-weight: 400;
-    animation: fadeUp 0.6s 0.4s ease both;
-  }
-
-  /* Terminal */
-  .terminal {
-    margin: 56px auto 0;
-    width: 100%;
-    max-width: 560px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    animation: fadeUp 0.6s 0.5s ease both;
-    box-shadow: 0 0 60px rgba(0, 245, 160, 0.05);
-  }
-  .terminal-bar {
-    display: flex; align-items: center; gap: 8px;
-    padding: 14px 18px;
-    border-bottom: 1px solid var(--border);
-    background: rgba(255,255,255,0.02);
-  }
-  .dot { width: 12px; height: 12px; border-radius: 50%; }
-  .dot-r { background: #ff5f57; }
-  .dot-y { background: #febc2e; }
-  .dot-g { background: #28c840; }
-  .terminal-title {
-    font-family: 'Space Mono', monospace;
-    font-size: 12px;
-    color: var(--muted);
-    margin-left: auto;
-  }
-  .terminal-body {
-    padding: 24px;
-    font-family: 'Space Mono', monospace;
-    font-size: 14px;
-    line-height: 2;
-  }
-  .t-muted { color: var(--muted); }
-  .t-green { color: var(--accent); }
-  .t-blue { color: var(--accent2); }
-  .t-white { color: var(--text); }
-  .t-dim { color: #3a4460; }
-
-  /* Form */
-  .form-wrap {
-    margin: 48px auto 0;
-    width: 100%;
-    max-width: 480px;
-    animation: fadeUp 0.6s 0.6s ease both;
-  }
-  .form-inner {
-    display: flex;
-    gap: 0;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
-    background: var(--surface);
-    transition: border-color 0.2s;
-  }
-  .form-inner:focus-within {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(0, 245, 160, 0.08);
-  }
-  input[type="email"] {
-    flex: 1;
-    background: transparent;
-    border: none;
-    outline: none;
-    padding: 16px 20px;
-    color: var(--text);
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-  }
-  input::placeholder { color: var(--muted); }
-  button[type="submit"] {
-    background: var(--accent);
-    color: #060810;
-    border: none;
-    padding: 16px 24px;
-    font-family: 'Syne', sans-serif;
-    font-weight: 700;
-    font-size: 14px;
-    cursor: none;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-  button[type="submit"]:hover {
-    background: #00dda0;
-    padding-right: 28px;
-  }
-  .form-note {
-    text-align: center;
-    margin-top: 14px;
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  /* PAIN SECTION */
-  .section {
-    position: relative; z-index: 1;
-    padding: 100px 60px;
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-
-  .section-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--accent);
-    letter-spacing: 3px;
-    text-transform: uppercase;
-    margin-bottom: 20px;
-  }
-
-  .section-title {
-    font-size: clamp(32px, 4vw, 52px);
-    font-weight: 800;
-    letter-spacing: -2px;
-    line-height: 1.1;
-    max-width: 600px;
-  }
-
-  /* Pain cards */
-  .pain-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-top: 60px;
-  }
-  .pain-card {
-    background: var(--surface);
-    padding: 36px 32px;
-    transition: background 0.2s;
-  }
-  .pain-card:hover { background: #10151f; }
-  .pain-number {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 20px;
-  }
-  .pain-icon {
-    font-size: 28px;
-    margin-bottom: 16px;
-    display: block;
-  }
-  .pain-card h3 {
-    font-size: 18px;
-    font-weight: 700;
-    margin-bottom: 12px;
-    letter-spacing: -0.5px;
-  }
-  .pain-card p {
-    font-size: 14px;
-    color: var(--muted);
-    line-height: 1.7;
-    font-weight: 400;
-  }
-
-  /* PHASES */
-  .phases {
-    position: relative; z-index: 1;
-    padding: 0 60px 100px;
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-  .phase-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin-top: 60px;
-  }
-  .phase-item {
-    display: grid;
-    grid-template-columns: 80px 1fr auto;
-    align-items: start;
-    gap: 32px;
-    padding: 32px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    background: var(--surface);
-    transition: all 0.25s;
-    position: relative;
-    overflow: hidden;
-  }
-  .phase-item::before {
-    content: '';
-    position: absolute;
-    left: 0; top: 0; bottom: 0;
-    width: 3px;
-    background: var(--accent);
-    transform: scaleY(0);
-    transition: transform 0.3s ease;
-    transform-origin: top;
-  }
-  .phase-item:hover::before { transform: scaleY(1); }
-  .phase-item:hover { background: #0d1420; border-color: #2a3448; }
-
-  .phase-num {
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-    color: var(--accent);
-    padding-top: 4px;
-  }
-  .phase-content h3 {
-    font-size: 20px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    margin-bottom: 8px;
-  }
-  .phase-content p {
-    font-size: 14px;
-    color: var(--muted);
-    line-height: 1.7;
-    font-weight: 400;
-    max-width: 500px;
-  }
-  .phase-tag {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    padding: 6px 12px;
-    border-radius: 4px;
-    white-space: nowrap;
-    align-self: flex-start;
-    margin-top: 4px;
-  }
-
-  /* CTA BOTTOM */
-  .cta-bottom {
-    position: relative; z-index: 1;
-    padding: 80px 40px 120px;
-    text-align: center;
-  }
-  .cta-box {
-    max-width: 700px;
-    margin: 0 auto;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 70px 60px;
-    position: relative;
-    overflow: hidden;
-  }
-  .cta-box::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse at 50% 0%, rgba(0,245,160,0.06) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .cta-box h2 {
-    font-size: clamp(28px, 4vw, 44px);
-    font-weight: 800;
-    letter-spacing: -2px;
-    line-height: 1.1;
-    margin-bottom: 16px;
-  }
-  .cta-box p {
-    color: var(--muted);
-    font-size: 16px;
-    margin-bottom: 40px;
-    line-height: 1.6;
-    font-weight: 400;
-  }
-
-  /* Stats */
-  .stats {
-    display: flex;
-    justify-content: center;
-    gap: 60px;
-    margin-top: 60px;
-    padding-top: 60px;
-    border-top: 1px solid var(--border);
-  }
-  .stat-item { text-align: center; }
-  .stat-num {
-    font-size: 36px;
-    font-weight: 800;
-    letter-spacing: -2px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .stat-label {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    margin-top: 4px;
-  }
-
-  /* Footer */
-  footer {
-    position: relative; z-index: 1;
-    border-top: 1px solid var(--border);
-    padding: 24px 60px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  footer .logo { font-size: 14px; }
-  .footer-note {
-    font-family: 'Space Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-  }
-
-  /* Success message */
-  .success-msg {
-    display: none;
-    font-family: 'Space Mono', monospace;
-    font-size: 13px;
-    color: var(--accent);
-    margin-top: 14px;
-    text-align: center;
-  }
-
-  /* Animations */
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(24px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes fadeDown {
-    from { opacity: 0; transform: translateY(-16px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.8); }
-  }
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-  }
-
-  .cursor-blink {
-    display: inline-block;
-    width: 2px; height: 1em;
-    background: var(--accent);
-    vertical-align: text-bottom;
-    animation: blink 1s infinite;
-    margin-left: 2px;
-  }
-
-  /* Divider */
-  .divider {
-    position: relative; z-index: 1;
-    height: 1px;
-    background: var(--border);
-    max-width: 1100px;
-    margin: 0 auto;
-  }
-
-  @media (max-width: 768px) {
-    nav { padding: 16px 24px; }
-    .section, .phases { padding: 60px 24px; }
-    .pain-grid { grid-template-columns: 1fr; }
-    .phase-item { grid-template-columns: 1fr; gap: 16px; }
-    .stats { gap: 30px; }
-    .cta-box { padding: 40px 24px; }
-    footer { padding: 20px 24px; flex-direction: column; gap: 8px; text-align: center; }
-  }
-</style>
-</head>
-<body>
-
-<div class="cursor" id="cursor"></div>
-<div class="cursor-ring" id="cursorRing"></div>
-<div class="blob blob-1"></div>
-<div class="blob blob-2"></div>
-
-<!-- NAV -->
-<nav>
-  <div class="logo">ml<span>ship</span>.dev</div>
-  <div class="nav-tag">early access — free</div>
-</nav>
-
-<!-- HERO -->
-<section class="hero">
-  <div class="badge">
-    <div class="badge-dot"></div>
-    Now in early access — join the waitlist
-  </div>
-
-  <h1>Deploy your ML app<br>in <em>60 seconds.</em></h1>
-
-  <p class="hero-sub">
-    No Docker. No AWS. No DevOps headaches.<br>
-    Upload your Streamlit or Gradio project and get a live URL instantly.
-  </p>
-
-  <div class="terminal">
-    <div class="terminal-bar">
-      <div class="dot dot-r"></div>
-      <div class="dot dot-y"></div>
-      <div class="dot dot-g"></div>
-      <div class="terminal-title">mlship deploy</div>
-    </div>
-    <div class="terminal-body">
-      <div><span class="t-muted">$</span> <span class="t-blue">mlship</span> <span class="t-white">deploy my_fraud_detector/</span></div>
-      <div class="t-dim">────────────────────────────────────</div>
-      <div><span class="t-muted">→</span> <span class="t-white">Detecting environment...</span> <span class="t-green">Python 3.11 ✓</span></div>
-      <div><span class="t-muted">→</span> <span class="t-white">Installing dependencies...</span> <span class="t-green">done ✓</span></div>
-      <div><span class="t-muted">→</span> <span class="t-white">Building container...</span> <span class="t-green">ready ✓</span></div>
-      <div><span class="t-muted">→</span> <span class="t-white">Deploying to edge...</span> <span class="t-green">live ✓</span></div>
-      <div class="t-dim">────────────────────────────────────</div>
-      <div><span class="t-green">✓ Live at:</span> <span class="t-blue">fraud-detector.mlship.dev</span><span class="cursor-blink"></span></div>
+<li>✓ Connect repo → select branch → deploy in seconds <span style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;">← Discord feedback</span></li>
+          <li>✓ Push to GitHub → MLShip auto-redeploys instantly <span style="font-size:10px;color:var(--muted);font-family:'Space Mono',monospace;">← Discord feedback</span></li>
+          <li>✓ main → live production · dev → private testing</li>
+          <li>✓ Every commit linked to model version automatically</li>
+          <li>✓ No manual redeployment ever again</li>
+        </ul>
+      </div>
+      <div class="solution-terminal">
+        <div class="terminal-bar">
+          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+          <div class="terminal-title">github auto-deploy</div>
+        </div>
+        <div class="terminal-body" style="font-size:13px;gap:4px;display:flex;flex-direction:column;">
+          <div><span class="t-muted">$</span> <span class="t-white">git push origin main</span></div>
+          <div class="t-dim">──────────────────────────────</div>
+          <div><span class="t-muted">→</span> <span class="t-white">MLShip detected push...</span> <span class="t-green">✓</span></div>
+          <div><span class="t-muted">→</span> <span class="t-white">Rebuilding app...</span> <span class="t-green">✓</span></div>
+          <div><span class="t-muted">→</span> <span class="t-white">Redeploying to edge...</span> <span class="t-green">✓</span></div>
+          <div class="t-dim">──────────────────────────────</div>
+          <div><span class="t-green">✓ main:</span> <span class="t-blue">app.mlship.dev (production)</span></div>
+          <div><span class="t-green">✓ dev: &nbsp;</span> <span class="t-blue">dev.mlship.dev (testing)</span></div>
+        </div>
+      </div>
     </div>
   </div>
 
-  <div class="form-wrap">
-    <form class="form-inner" id="heroForm" onsubmit="handleSubmit(event, 'heroSuccess')">
-      <input type="email" placeholder="your@email.com" required />
-      <button type="submit">Get Early Access →</button>
-    </form>
-    <div class="success-msg" id="heroSuccess">✓ You're on the list. We'll be in touch soon.</div>
-    <p class="form-note">Free forever plan · No credit card · Ships in weeks</p>
+  <!-- Solution 3 — AI Support -->
+  <div class="solution-card" style="margin-top:20px;">
+    <div class="solution-header">
+      <div class="solution-num">03</div>
+      <div class="solution-badge" style="background:rgba(0,184,255,0.08);border-color:rgba(0,184,255,0.2);color:#00b8ff;">🤖 Coming Next</div>
+    </div>
+    <div class="solution-body">
+      <div class="solution-text">
+        <h3>AI Support Widget</h3>
+        <p>You deploy your ML app and users flood in. Then the questions start — "Why did the model give this result?", "How do I upload my data?", "What does this score mean?" MLShip's AI widget answers ML-specific questions 24/7, automatically, trained on your app's own context.</p>
+        <ul class="solution-list">
+          <li>✓ Add in 5 lines — pip install mlsistant</li>
+          <li>✓ AI trained on your app's specific context</li>
+          <li>✓ Escalates to you when it can't answer</li>
+          <li>✓ Dashboard shows what users ask most</li>
+        </ul>
+      </div>
+      <div class="solution-terminal">
+        <div class="terminal-bar">
+          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+          <div class="terminal-title">support widget</div>
+        </div>
+        <div class="terminal-body" style="font-size:13px;gap:4px;display:flex;flex-direction:column;">
+          <div><span class="t-blue">import</span> <span class="t-white">mlsistant</span></div>
+          <div class="t-dim">──────────────────────────────</div>
+          <div><span class="t-white">mlsistant.init(</span></div>
+          <div><span class="t-white">&nbsp;&nbsp;app_key<span class="t-muted">=</span><span class="t-green">"your_key"</span>,</span></div>
+          <div><span class="t-white">&nbsp;&nbsp;context<span class="t-muted">=</span><span class="t-green">"cancer detection"</span></span></div>
+          <div><span class="t-white">)</span></div>
+          <div class="t-dim">──────────────────────────────</div>
+          <div><span class="t-green">✓ AI support active — 24/7</span></div>
+        </div>
+      </div>
+    </div>
   </div>
-</section>
 
-<div class="divider"></div>
-
-<!-- PAIN -->
-<section class="section">
-  <div class="section-label">// the problem</div>
-  <h2 class="section-title">You build in hours.<br>Deployment takes days.</h2>
-
-  <div class="pain-grid">
-    <div class="pain-card">
-      <div class="pain-number">01 /</div>
-      <span class="pain-icon">🐳</span>
-      <h3>Docker is a nightmare</h3>
-      <p>You're a data scientist, not a DevOps engineer. Containerization, environment configs, port mappings — all to just share your model.</p>
+  <!-- Solution 4 — Experiment Tracker -->
+  <div class="solution-card" style="margin-top:20px;">
+    <div class="solution-header">
+      <div class="solution-num">04</div>
+      <div class="solution-badge" style="background:rgba(255,200,0,0.06);border-color:rgba(255,200,0,0.2);color:#ffc800;">📊 On the Horizon</div>
     </div>
-    <div class="pain-card">
-      <div class="pain-number">02 /</div>
-      <span class="pain-icon">☁️</span>
-      <h3>AWS is overkill</h3>
-      <p>IAM roles, EC2 instances, load balancers — you just want a live URL. Instead you lose 3 days in AWS documentation.</p>
-    </div>
-    <div class="pain-card">
-      <div class="pain-number">03 /</div>
-      <span class="pain-icon">🔗</span>
-      <h3>GitHub links don't work</h3>
-      <p>Most ML builders give up and share a repo nobody can run. Your brilliant model never reaches the people who need it.</p>
+    <div class="solution-body">
+      <div class="solution-text">
+        <h3>Experiment Tracker + GitHub Commit Logging</h3>
+        <p>You run 50 model experiments over 2 weeks. Which performed best? MLShip auto-logs every training run and links each GitHub commit to model metrics and deployment version automatically. Compare results side by side and deploy your best model in one click. Nobody else connects GitHub commits to experiment results — this is unique to MLShip.</p>
+        <ul class="solution-list">
+          <li>✓ Auto-logs every training run</li>
+          <li>✓ Every GitHub commit linked to model metrics</li>
+          <li>✓ Visual side-by-side comparison</li>
+          <li>✓ One-click deploy your best model</li>
+          <li>✓ Simpler than MLflow, cheaper than W&B</li>
+        </ul>
+      </div>
+      <div class="solution-terminal">
+        <div class="terminal-bar">
+          <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+          <div class="terminal-title">experiment tracker</div>
+        </div>
+        <div class="terminal-body" style="font-size:13px;gap:4px;display:flex;flex-direction:column;">
+          <div><span class="t-muted">commit a3f9c2</span> <span class="t-green">← best</span></div>
+          <div class="t-dim">──────────────────────────────</div>
+          <div><span class="t-white">accuracy &nbsp;</span><span class="t-green">0.97</span></div>
+          <div><span class="t-white">loss &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="t-green">0.03</span></div>
+          <div><span class="t-white">epochs &nbsp;&nbsp;&nbsp;</span><span class="t-white">120</span></div>
+          <div><span class="t-white">lr &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="t-white">0.001</span></div>
+          <div class="t-dim">──────────────────────────────</div>
+          <div><span class="t-green">→ Deploy run #47?</span> <span class="t-blue">[y/n]</span></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -629,25 +110,57 @@
       <div class="phase-num">Phase 01</div>
       <div class="phase-content">
         <h3>One-Click Deployment</h3>
-        <p>Upload your Streamlit or Gradio project. We handle the rest — Python environments, dependencies, scaling. You get a live URL in 60 seconds.</p>
+        <p>Upload your Streamlit or Gradio project. MLShip auto-reads requirements.txt, pyproject.toml, and environment.yml — installs everything and gives you a live URL with a clear connection endpoint in 60 seconds. Community templates let you deploy a starter app instantly. CPU/GPU selection built in. Clear error messages in plain English when anything fails.</p>
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="font-size:10px;font-family:'Space Mono',monospace;color:#5a6480;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);padding:3px 8px;border-radius:4px;">💬 Discord → clear endpoints</span>
+          <span style="font-size:10px;font-family:'Space Mono',monospace;color:#5a6480;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);padding:3px 8px;border-radius:4px;">📱 WhatsApp → CPU/GPU + templates</span>
+          <span style="font-size:10px;font-family:'Space Mono',monospace;color:#5a6480;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);padding:3px 8px;border-radius:4px;">🏆 Kaggle → error messages</span>
+        </div>
       </div>
       <div class="phase-tag">Launching soon</div>
     </div>
     <div class="phase-item">
       <div class="phase-num">Phase 02</div>
       <div class="phase-content">
-        <h3>AI Support Widget</h3>
-        <p>Add a smart support layer to your deployed app in 5 lines of Python. The AI answers user questions 24/7 — why did the model predict this, how do I upload data, what does this output mean.</p>
+        <h3>GitHub Native Deployment + Auto Redeploy</h3>
+        <p>Connect your GitHub repo and deploy instantly. Push to main → production redeploys automatically. Push to dev → private testing environment. Every commit is linked to your model version and deployment history.</p>
+        <div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="font-size:10px;font-family:'Space Mono',monospace;color:#5a6480;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);padding:3px 8px;border-radius:4px;">💬 Discord → "auto-redeploy on git push"</span>
+        </div>
       </div>
-      <div class="phase-tag">Coming next</div>
+      <div class="phase-tag">Launching soon</div>
     </div>
     <div class="phase-item">
       <div class="phase-num">Phase 03</div>
       <div class="phase-content">
-        <h3>Experiment Tracker</h3>
-        <p>Automatically log every model run. Compare results side by side. Deploy your best model directly from the tracker. Never lose progress again.</p>
+        <h3>AI Support Widget</h3>
+        <p>Add a smart support layer to your deployed app in 5 lines of Python. The AI answers user questions 24/7 — why did the model predict this, how do I upload data, what does this output mean — and escalates only when it can't handle it.</p>
+      </div>
+      <div class="phase-tag">Coming next</div>
+    </div>
+    <div class="phase-item">
+      <div class="phase-num">Phase 04</div>
+      <div class="phase-content">
+        <h3>Experiment Tracker + GitHub Commit Logging</h3>
+        <p>Auto-log every model run. Every GitHub commit links to model metrics and deployment version automatically. Compare results side by side. Deploy your best model in one click. Simpler than MLflow, cheaper than W&B — built for indie builders.</p>
       </div>
       <div class="phase-tag">On the horizon</div>
+    </div>
+    <div class="phase-item">
+      <div class="phase-num">Phase 05</div>
+      <div class="phase-content">
+        <h3>API + Dashboard</h3>
+        <p>Full REST API to manage all your deployments programmatically. Beautiful unified dashboard showing every app, every version, every metric in one place. Team collaboration features, usage analytics per app, and role-based access control.</p>
+      </div>
+      <div class="phase-tag" style="color:#00b8ff;border-color:rgba(0,184,255,0.3);">Coming later</div>
+    </div>
+    <div class="phase-item">
+      <div class="phase-num">Phase 06</div>
+      <div class="phase-content">
+        <h3>Monitoring + Alerting</h3>
+        <p>Uptime alerts the moment your app goes down. Error rate tracking, response time monitoring, traffic analytics, and model performance metrics over time. Know before your users do when something breaks.</p>
+      </div>
+      <div class="phase-tag" style="color:#00b8ff;border-color:rgba(0,184,255,0.3);">Coming later</div>
     </div>
   </div>
 </section>
@@ -656,11 +169,46 @@
 <section class="cta-bottom">
   <div class="cta-box">
     <h2>Stop fighting DevOps.<br>Start shipping models.</h2>
-    <p>Join data scientists and ML engineers who are done wasting days on deployment and want to get back to building.</p>
+    <p>Join data scientists, ML engineers, and Python developers who are done wasting days on deployment and want to get back to building.</p>
 
-    <form class="form-inner" id="ctaForm" onsubmit="handleSubmit(event, 'ctaSuccess')" style="max-width:440px;margin:0 auto;">
-      <input type="email" placeholder="your@email.com" required />
-      <button type="submit">Join Waitlist →</button>
+    <form class="form-full" id="ctaForm" onsubmit="handleSubmit(event, 'ctaSuccess', this)" style="max-width:500px;margin:0 auto;">
+      <div class="form-row">
+        <div class="form-field">
+          <label>Your Name</label>
+          <input type="text" name="name" placeholder="Ada Lovelace" required />
+        </div>
+        <div class="form-field">
+          <label>Email</label>
+          <input type="email" name="email" placeholder="you@email.com" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>I am a...</label>
+          <select name="role">
+            <option value="">Select your role</option>
+            <option>Data Scientist</option>
+            <option>ML Engineer</option>
+            <option>Python Developer</option>
+            <option>Student / Researcher</option>
+            <option>Hackathon Builder</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Current Deploy Tool</label>
+          <select name="current_tool">
+            <option value="">What do you use now?</option>
+            <option>HuggingFace Spaces</option>
+            <option>Streamlit Cloud</option>
+            <option>Docker + AWS</option>
+            <option>Railway</option>
+            <option>Nothing — I give up</option>
+            <option>Other</option>
+          </select>
+        </div>
+      </div>
+      <button class="form-submit-btn" type="submit">Join Waitlist — It's Free →</button>
     </form>
     <div class="success-msg" id="ctaSuccess">✓ You're on the list. We'll be in touch soon.</div>
 
@@ -674,7 +222,7 @@
         <div class="stat-label">devops knowledge needed</div>
       </div>
       <div class="stat-item">
-        <div class="stat-num">3x</div>
+        <div class="stat-num">6x</div>
         <div class="stat-label">phases of growth</div>
       </div>
     </div>
@@ -684,7 +232,7 @@
 <!-- FOOTER -->
 <footer>
   <div class="logo">ml<span>ship</span>.dev</div>
-  <div class="footer-note">Built for data scientists & ML engineers · Early access</div>
+  <div class="footer-note">Built for data scientists, ML engineers & Python developers · Early access</div>
 </footer>
 
 <script>
@@ -722,12 +270,20 @@
   });
 
   // Form submit
-  function handleSubmit(e, successId) {
+  async function handleSubmit(e, successId, form) {
     e.preventDefault();
-    const form = e.target;
     const success = document.getElementById(successId);
+    const data = {};
+    new FormData(form).forEach((value, key) => { data[key] = value; });
     form.style.opacity = '0.4';
     form.style.pointerEvents = 'none';
+    try {
+      await fetch('https://formspree.io/f/mjgakkva', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(data)
+      });
+    } catch(err) { console.log(err); }
     success.style.display = 'block';
   }
 
